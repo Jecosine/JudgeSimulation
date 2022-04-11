@@ -136,12 +136,15 @@ class DataManager:
         dirname = self.name_template.format_map(
             {"container_count": container_count, "problem_count": problem_count, "task_count": task_count})
         count = self.data_count(dirname)
+        # generate lacking suits
         if suit_count > count:
             self.gen(container_count, problem_count, task_count, suit_count - count)
-        else:
-            #  return the first n set by default
 
-
+        files_to_load = [str(i).zfill(3) for i in range(suit_count)]
+        dataset = []
+        for f in files_to_load:
+            dataset.append(self.load_one(f))
+        return dataset
 
     def data_count(self, dirname):
         current = 0
