@@ -1,3 +1,4 @@
+import fnmatch
 import os
 import pickle
 import uuid
@@ -116,7 +117,8 @@ class DataManager:
         data = Dataset(containers, problems, tasks)
         # save to local
         dirname = self.path_constructor(container_count, problem_count, task_count)
-        self.save(data, dirname)
+        if save:
+            self.save(data, dirname)
         return data
 
     def gen(self,
@@ -172,7 +174,7 @@ class DataManager:
     def data_count(dirname: str) -> int:
         current = 0
         if os.path.exists(dirname):
-            file_list = os.listdir(dirname)
+            file_list = fnmatch.filter(os.listdir(dirname), "*.pic")
             if len(file_list) != 0:
                 file_list.sort()
                 try:
