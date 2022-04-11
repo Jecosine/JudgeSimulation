@@ -1,8 +1,11 @@
-from model import Scheduler
-from service.generate_tasks import DataManager
+import os
+import argparse
 
-if __name__ == '__main__':
-    # setup containers
-    dm = DataManager()
-    dataset = dm.gen(4, 10, 100, 1)
-    s = Scheduler()
+parser = None
+
+
+def init_argparse():
+    global parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data-dir", default="data/", help="dir to store data files")
+    return parser.parse_args()
