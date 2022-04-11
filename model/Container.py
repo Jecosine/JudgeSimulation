@@ -8,9 +8,9 @@ class Container:
     def __init__(self, config: dict):
         self.available = True
         self.task_queue: list[JudgeTask] = []
-        self.container_id = config.get('container_id')
-        self.memory = config.get('memory')
-        self.machine_id = config.get('machine_id')
+        self.container_id = config.get("container_id")
+        self.memory = config.get("memory")
+        self.machine_id = config.get("machine_id")
         self.history = []
         self.task_count = 0
         self.lock = threading.Lock()
