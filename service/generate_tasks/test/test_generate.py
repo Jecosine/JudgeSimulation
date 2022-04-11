@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from model import ProblemInfo
-from service.generate_tasks.generate import TaskGenerator
+from service.generate_tasks.generate import TaskGenerator, DataManager
 import logging
 
 log = logging.getLogger(__name__)
@@ -34,3 +34,10 @@ class TestTaskGenerator(TestCase):
         np.random.seed(None)
         tl = self.g.generate_n_tasks(10, 100)
         self.assertEqual(len(tl), 100)
+
+
+class TestDataManager(TestCase):
+    dm = DataManager()
+
+    def test_gen(self):
+        self.dm.gen(4, 10, 100, 1)

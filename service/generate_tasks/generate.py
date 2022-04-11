@@ -12,7 +12,7 @@ class TaskGenerator:
     def clear_tasks(self):
         self.task_list.clear()
 
-    def generate_n_tasks(self, problem_count: int, n: int, config: dict = None):
+    def generate_n_tasks(self, problem_count: int, n: int, config: dict = None) -> list[JudgeTask]:
         problems = [ProblemInfo(
             problem_id=i,
             tle_rate=float(np.random.rand()),
@@ -22,7 +22,10 @@ class TaskGenerator:
         ) for i in range(problem_count)]
         return self.generate_n_tasks_with_problem(problems, n, config)
 
-    def generate_n_tasks_with_problem(self, problems: list[ProblemInfo], n: int, config: dict = None):
+    def generate_n_tasks_with_problem(self,
+                                      problems: list[ProblemInfo],
+                                      n: int,
+                                      config: dict = None) -> list[JudgeTask]:
         task_list = []
         problem_dict = {p.problem_id: p for p in problems}
         if config:
@@ -76,7 +79,7 @@ class TaskGenerator:
 
 
 class Dataset:
-    def __init__(self, containers: list[Container], problems: list[ProblemInfo], tasks: list[JudgeTask]):
+    def __init__(self, containers: list[dict], problems: list[ProblemInfo], tasks: list[JudgeTask]):
         self.containers = containers
         self.problems = problems
         self.tasks = tasks
@@ -88,19 +91,17 @@ class DataManager:
         self.name_template = "d-{container_count:05d}-{problem_count:05d}-{task_count:06d}"
         self.generator = TaskGenerator()
 
-    def gen_one(self, container_count: int, problem_count: int, task_count: int, save: bool = True):
+    def gen_one(self, container_count: int, problem_count: int, task_count: int, save: bool = True) -> Dataset:
         # anyone of params should not be 0
         if (container_count and task_count and problem_count) == 0:
             print("Do nothing")
-            return
+            exit(1)
         containers = [
-            Container(
-                config={
-                    "container_id": i,
-                    "memory": 2 * 1024 * 1024 * 1024,
-                    "machine_id": -1
-                }
-            ) for i in range(container_count)
+            {
+                "container_id": i,
+                "memory": 2 * 1024 * 1024 * 1024,
+                "machine_id": -1
+            } for i in range(container_count)
         ]
         problems = [
             ProblemInfo(
@@ -119,19 +120,40 @@ class DataManager:
         self.save(data, dirname)
         return data
 
-    def gen(self, container_count: int, problem_count: int, task_count: int, suit_count: int = 1, save: bool = True):
+    def gen(self,
+            container_count: int,
+            problem_count: int,
+            task_count: int,
+            suit_count: int = 1,
+            save: bool = True) -> list[Dataset]:
         if suit_count == 0:
-            return
+            return []
         data_list = []
         for i in range(suit_count):
             data_list.append(self.gen_one(container_count, problem_count, task_count, save))
         return data_list
 
-    def load_one(self, path):
+    @staticmethod
+    def load_one(path) -> Dataset:
         with open(path, "rb") as f:
-            pickle.load(path)
+            data = pickle.load(path)
+        return data
 
-    def load(self, container_count: int, problem_count: int, task_count: int, suit_count: int = 1):
+    def path_constructor(self,
+                         container_count: int,
+                         problem_count: int,
+                         task_count: int,
+                         idx: int = 1, ) -> str:
+        dirname = self.name_template.format_map(
+            {"container_count": container_count, "problem_count": problem_count, "task_count": task_count}
+        )
+        return os.path.join(self.path, dirname, f"{idx:03d}.pic")
+
+    def load(self,
+             container_count: int,
+             problem_count: int,
+             task_count: int,
+             suit_count: int = 1) -> list[Dataset]:
         # check if exists
         dirname = self.name_template.format_map(
             {"container_count": container_count, "problem_count": problem_count, "task_count": task_count})
@@ -140,13 +162,14 @@ class DataManager:
         if suit_count > count:
             self.gen(container_count, problem_count, task_count, suit_count - count)
 
-        files_to_load = [str(i).zfill(3) for i in range(suit_count)]
         dataset = []
-        for f in files_to_load:
-            dataset.append(self.load_one(f))
+        for i in range(suit_count):
+            dataset.append(self.load_one(
+                self.path_constructor(container_count, problem_count, task_count, i)
+            ))
         return dataset
 
-    def data_count(self, dirname):
+    def data_count(self, dirname: str) -> int:
         current = 0
         path = os.path.join(self.path, dirname)
         if os.path.exists(path):
@@ -154,7 +177,7 @@ class DataManager:
             if len(file_list) != 0:
                 file_list.sort()
                 try:
-                    current = int(file_list[-1])
+                    current = int(os.path.splitext(file_list[-1])[0])
                 except ValueError:
                     print("cannot recognize latest dataset name")
                     exit(1)
@@ -163,7 +186,7 @@ class DataManager:
             os.mkdir(path)
         return current
 
-    def save(self, data: Dataset, dirname: str):
+    def save(self, data: Dataset, dirname: str) -> None:
         current = self.data_count(dirname)
 
         with open(os.path.join(self.path, dirname, f"{current:03d}.pic"), "wb") as f:
