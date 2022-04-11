@@ -8,6 +8,7 @@ from model import ProblemInfo
 from service.generate_tasks.generate import TaskGenerator, DataManager
 import logging
 
+logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
@@ -37,7 +38,14 @@ class TestTaskGenerator(TestCase):
 
 
 class TestDataManager(TestCase):
-    dm = DataManager()
+    dm = DataManager(path="../../../data")
 
     def test_gen(self):
         self.dm.gen(4, 10, 100, 1)
+
+    def test_load(self):
+        log.info(f"Current data count: {self.dm.data_count(self.dm.path_constructor(4, 10, 100))}")
+
+    def test_path_constructor(self):
+        log.info(f"construct file name:{self.dm.path_constructor(4, 10, 100, 2)}")
+        log.info(f"construct dir name:{self.dm.path_constructor(4, 10, 100)}")
