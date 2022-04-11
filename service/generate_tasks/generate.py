@@ -115,8 +115,7 @@ class DataManager:
         tasks = self.generator.generate_n_tasks_with_problem(problems, task_count)
         data = Dataset(containers, problems, tasks)
         # save to local
-        dirname = self.name_template.format_map(
-            {"container_count": container_count, "problem_count": problem_count, "task_count": task_count})
+        dirname = self.path_constructor(container_count, problem_count, task_count)
         self.save(data, dirname)
         return data
 
@@ -143,11 +142,12 @@ class DataManager:
                          container_count: int,
                          problem_count: int,
                          task_count: int,
-                         idx: int = 1, ) -> str:
+                         idx: int = None, ) -> str:
         dirname = self.name_template.format_map(
             {"container_count": container_count, "problem_count": problem_count, "task_count": task_count}
         )
-        return os.path.join(self.path, dirname, f"{idx:03d}.pic")
+        return os.path.join(self.path, dirname, f"{idx:03d}.pic") if idx is not None \
+            else os.path.join(self.path, dirname)
 
     def load(self,
              container_count: int,
@@ -155,8 +155,7 @@ class DataManager:
              task_count: int,
              suit_count: int = 1) -> list[Dataset]:
         # check if exists
-        dirname = self.name_template.format_map(
-            {"container_count": container_count, "problem_count": problem_count, "task_count": task_count})
+        dirname = self.path_constructor(container_count, problem_count, task_count)
         count = self.data_count(dirname)
         # generate lacking suits
         if suit_count > count:
@@ -169,11 +168,11 @@ class DataManager:
             ))
         return dataset
 
-    def data_count(self, dirname: str) -> int:
+    @staticmethod
+    def data_count(dirname: str) -> int:
         current = 0
-        path = os.path.join(self.path, dirname)
-        if os.path.exists(path):
-            file_list = os.listdir(path)
+        if os.path.exists(dirname):
+            file_list = os.listdir(dirname)
             if len(file_list) != 0:
                 file_list.sort()
                 try:
@@ -183,11 +182,11 @@ class DataManager:
                     exit(1)
                 current += 1
         else:
-            os.mkdir(path)
+            os.mkdir(dirname)
         return current
 
     def save(self, data: Dataset, dirname: str) -> None:
         current = self.data_count(dirname)
 
-        with open(os.path.join(self.path, dirname, f"{current:03d}.pic"), "wb") as f:
+        with open(os.path.join(dirname, f"{current:03d}.pic"), "wb") as f:
             pickle.dump(data, f)
